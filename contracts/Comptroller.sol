@@ -1004,39 +1004,79 @@ contract Comptroller is ComptrollerV8Storage, ComptrollerInterface, ComptrollerE
          */
          supplyState.block = borrowState.block = blockNumber;
     }
-    
+
     /**
-      * @notice Set the given market caps for the given cToken markets.
-      * @dev Admin or marketCapGuardian function to set the market caps.
-      * @param cTokens The addresses of the markets (tokens) to change the market caps for
-      * @param newSupplyCaps The new supply cap values in underlying to be set. A value of 0 corresponds to unlimited supplying.
+      * @notice Set the given borrow caps for the given cToken markets. Borrowing that brings total borrows to or above borrow cap will revert.
+      * @dev Admin or borrowCapGuardian function to set the borrow caps. A borrow cap of 0 corresponds to unlimited borrowing.
+      * @param cTokens The addresses of the markets (tokens) to change the borrow caps for
       * @param newBorrowCaps The new borrow cap values in underlying to be set. A value of 0 corresponds to unlimited borrowing.
       */
-    function _setMarketCaps(CToken[] calldata cTokens, uint[] calldata newSupplyCaps, uint[] calldata newBorrowCaps) external {
-        require(msg.sender == admin || msg.sender == marketCapGuardian, "only admin or market cap guardian can set supply caps");
+    function _setMarketBorrowCaps(CToken[] calldata cTokens, uint[] calldata newBorrowCaps) external {
+    	require(msg.sender == admin || msg.sender == borrowCapGuardian, "only admin or borrow cap guardian can set borrow caps");
+
         uint numMarkets = cTokens.length;
-        uint numSupplyCaps = newSupplyCaps.length;
         uint numBorrowCaps = newBorrowCaps.length;
-        require(numMarkets != 0 && numMarkets == numSupplyCaps && numMarkets == numBorrowCaps, "invalid input");
-        for (uint i = 0; i < numMarkets; i++) {
-            supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
+
+        require(numMarkets != 0 && numMarkets == numBorrowCaps, "invalid input");
+
+        for(uint i = 0; i < numMarkets; i++) {
             borrowCaps[address(cTokens[i])] = newBorrowCaps[i];
-            emit NewMarketCap(cTokens[i], newSupplyCaps[i], newBorrowCaps[i]);
+            emit NewBorrowCap(cTokens[i], newBorrowCaps[i]);
         }
     }
-    
+
     /**
-     * @notice Admin function to change the Market Cap Guardian
-     * @param newMarketCapGuardian The address of the new Market Cap Guardian
+     * @notice Admin function to change the Borrow Cap Guardian
+     * @param newBorrowCapGuardian The address of the new Borrow Cap Guardian
      */
-    function _setMarketCapGuardian(address newMarketCapGuardian) external {
-        require(msg.sender == admin, "only admin can set market cap guardian");
+    function _setBorrowCapGuardian(address newBorrowCapGuardian) external {
+        require(msg.sender == admin, "only admin can set borrow cap guardian");
+
         // Save current value for inclusion in log
-        address oldMarketCapGuardian = marketCapGuardian;
-        // Store marketCapGuardian with value newMarketCapGuardian
-        marketCapGuardian = newMarketCapGuardian;
-        // Emit NewMarketCapGuardian(OldMarketCapGuardian, NewMarketCapGuardian)
-        emit NewMarketCapGuardian(oldMarketCapGuardian, newMarketCapGuardian);
+        address oldBorrowCapGuardian = borrowCapGuardian;
+
+        // Store borrowCapGuardian with value newBorrowCapGuardian
+        borrowCapGuardian = newBorrowCapGuardian;
+
+        // Emit NewBorrowCapGuardian(OldBorrowCapGuardian, NewBorrowCapGuardian)
+        emit NewBorrowCapGuardian(oldBorrowCapGuardian, newBorrowCapGuardian);
+    }
+
+    /**
+      * @notice Set the given supply caps for the given cToken markets. Supplying that brings total supplies to or above supply cap will revert.
+      * @dev Admin or supplyCapGuardian function to set the supply caps. A supply cap of 0 corresponds to unlimited supplying.
+      * @param cTokens The addresses of the markets (tokens) to change the supply caps for
+      * @param newSupplyCaps The new supply cap values in underlying to be set. A value of 0 corresponds to unlimited supplying.
+      */
+    function _setMarketSupplyCaps(CToken[] calldata cTokens, uint[] calldata newSupplyCaps) external {
+    	require(msg.sender == admin || msg.sender == supplyCapGuardian, "only admin or supply cap guardian can set supply caps");
+
+        uint numMarkets = cTokens.length;
+        uint numSupplyCaps = newSupplyCaps.length;
+
+        require(numMarkets != 0 && numMarkets == numSupplyCaps, "invalid input");
+
+        for(uint i = 0; i < numMarkets; i++) {
+            supplyCaps[address(cTokens[i])] = newSupplyCaps[i];
+            emit NewSupplyCap(cTokens[i], newSupplyCaps[i]);
+        }
+    }
+
+    /**
+     * @notice Admin function to change the Supply Cap Guardian
+     * @param newSupplyCapGuardian The address of the new Supply Cap Guardian
+     */
+    function _setSupplyCapGuardian(address newSupplyCapGuardian) external {
+        require(msg.sender == admin, "only admin can set supply cap guardian");
+
+        // Save current value for inclusion in log
+        address oldSupplyCapGuardian = supplyCapGuardian;
+
+        // Store supplyCapGuardian with value newSupplyCapGuardian
+        supplyCapGuardian = newSupplyCapGuardian;
+
+        // Emit NewSupplyCapGuardian(OldSupplyCapGuardian, NewSupplyCapGuardian)
+        emit NewSupplyCapGuardian(oldSupplyCapGuardian, newSupplyCapGuardian);
     }
 
     /**
